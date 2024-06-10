@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignación de códigos a imágenes</title>
+<style>
+    #container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .image-container {
+        position: relative;
+        margin: 10px;
+    }
+    .code {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        background-color: white;
+        padding: 5px;
+    }
+</style>
+</head>
+<body>
+    <input type="file" id="imageUpload" accept="application/pdf"><br><br>
+    <textarea id="codeInput" rows="5" cols="30" placeholder="Ingresa los códigos alfanuméricos"></textarea><br><br>
+    <label for="quantity">Cantidad de fotos a duplicar:</label>
+    <input type="number" id="quantity" name="quantity" min="1" value="100"><br><br>
+    <button onclick="assignCodes()">Asignar Códigos</button>
+    <button onclick="downloadImages()">Descargar Imágenes</button><br><br>
+    <div id="container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.5.0/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        var imagesData = [];
+        var canvas = document.createElement("canvas");
+        var ctx = canvas.getContext("2d");
+
+        function assignCodes() {
+            var codes = document.getElementById("codeInput").value.split("\n");
+            var container = document.getElementById("container");
+            container.innerHTML = "";
+
+            var fileInput = document.getElementById('imageUpload');
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+
+            reader.onloadend = function () {
+                var imageBase64 = reader.result;
+                var quantity = parseInt(document.getElementById("quantity").value);
+
+                imagesData = []; // Limpiar datos anteriores
+
+                for (var i = 0; i < quantity; i++) {
+                    var imageData = {
+                        src: imageBase64,
+                        code: codes[i % codes.length]
+                    };
+                    imagesData.push(imageData);
+
+                    var imageContainer = document.createElement("div");
+                    imageContainer.classList.add("image-container");
+
+                    var img = document.createElement("img");
+                    img.src = imageData.src;
+                    img.width = 290; // Ancho actualizado
+                    img.height = 100; // Altura actualizada
+                    img.style.border = "3px inset #000"; // Borde actualizado
+                    img.style.fontSize = "25px"; // Tamaño de fuente actualizado
+
+                    var codeDiv = document.createElement("div");
+                    codeDiv.classList.add("code");
+                    codeDiv.innerText = imageData.code;
+
+                    imageContainer.appendChild(img);
+                    imageContainer.appendChild(codeDiv);
+
+                    container.appendChild(imageContainer);
+                }
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function downloadImages() {
+            if (imagesData.length === 0) {
+                alert("No hay imágenes para descargar.");
+                return;
+            }
+
+            var combinedCanvas = document.createElement("canvas");
+            var combinedCtx = combinedCanvas.getContext("2d");
+
+            var promises = [];
+
+            // Obtener el tamaño total del lienzo combinado
+            var totalHeight = 0;
+            var maxWidth = 0;
+            imagesData.forEach(function(imageData) {
+                var img = new Image();
+                img.src = imageData.src;
+                totalHeight += img.height;
+                maxWidth = Math.max(maxWidth, img.width);
+            });
+
+            combinedCanvas.width = maxWidth;
+            combinedCanvas.height = totalHeight;
+
+            var yOffset = 0;
+
+            imagesData.forEach(function(imageData) {
+                var img = new Image();
+                img.src = imageData.src;
+
+                promises.push(new Promise(function(resolve) {
+                    img.onload = function() {
+                        combinedCtx.drawImage(img, 0, yOffset);
+                        combinedCtx.font = "25px Arial";
+                        combinedCtx.fillText(imageData.code, 10, yOffset + img.height - 10);
+                        yOffset += img.height;
+                        resolve();
+                    };
+                }));
+            });
+
+            Promise.all(promises).then(function() {
+                combinedCanvas.toBlob(function(blob) {
+                    saveAs(blob, "combined_images.png");
+                });
+            });
+        }
+    </script>
+</body>
+</html>

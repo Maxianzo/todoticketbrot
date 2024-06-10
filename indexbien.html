@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignación de códigos a imágenes</title>
+<style>
+    #container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .image-container {
+        position: relative;
+        margin: 10px;
+    }
+    .code {
+        position: absolute;
+    bottom: 15px;
+    left: 150px;
+    background-color: white;
+    padding: 5px;
+    font-size: 20px;
+    }
+</style>
+</head>
+<body>
+    <input type="file" id="imageUpload" accept="application/pdf"><br><br>
+    <textarea id="codeInput" rows="5" cols="30" placeholder="Ingresa los códigos alfanuméricos"></textarea><br><br>
+    <label for="quantity">Cantidad de fotos a duplicar:</label>
+    <input type="number" id="quantity" name="quantity" min="1" value="100"><br><br>
+    <button onclick="assignCodes()">Asignar Códigos</button><br><br>
+    <div id="container"></div>
+
+    <script>
+        function assignCodes() {
+            var codes = document.getElementById("codeInput").value.split("\n");
+            var container = document.getElementById("container");
+            container.innerHTML = "";
+
+            var fileInput = document.getElementById('imageUpload');
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+
+            reader.onloadend = function () {
+                var imageBase64 = reader.result;
+                var quantity = parseInt(document.getElementById("quantity").value);
+
+                for (var i = 0; i < quantity; i++) {
+                    var imageContainer = document.createElement("div");
+                    imageContainer.classList.add("image-container");
+
+                    var img = document.createElement("img");
+                    img.src = imageBase64;
+                    img.width = 290; // Ancho actualizado
+                    img.height = 100; // Altura actualizada
+                    img.style.border = "3px inset #000"; // Borde actualizado
+                    img.style.fontSize = "25px"; // Tamaño de fuente actualizado
+
+                    var codeDiv = document.createElement("div");
+                    codeDiv.classList.add("code");
+                    codeDiv.innerText = codes[i % codes.length];
+
+                    imageContainer.appendChild(img);
+                    imageContainer.appendChild(codeDiv);
+
+                    container.appendChild(imageContainer);
+                }
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html>
